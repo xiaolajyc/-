@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>肉类冷冻批量处理计划（延后提醒）</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+  h1 { color: #2c3e50; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background: #eee; }
+  button { padding: 8px 12px; margin-top: 10px; }
+  #result { background: #fff; padding: 15px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>肉类冷冻批量处理计划（延后提醒）</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>肉类</th>
+      <th>数量(kg)</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody id="meatTableBody">
+    <tr>
+      <td>
+        <select class="meatType">
+          <option value="pork">猪肉 (Leg/Shoulder)</option>
+          <option value="beef">牛肉 (Corned Beef)</option>
+          <option value="chicken">鸡腿肉</option>
+          <option value="fish">巴沙鱼肉</option>
+          <option value="lamb">羊腿肉</option>
+        </select>
+      </td>
+      <td><input type="number" class="weight" value="1" min="0.1" step="0.1"></td>
+      <td><button onclick="removeRow(this)">删除</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<button onclick="addRow()">添加肉类</button>
+<button onclick="generatePlan()">生成处理计划</button>
+
+<div id="result"></div>
+
+<script>
+function addRow() {
+  const tbody = document.getElementById('meatTableBody');
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>
+    <select class="meatType">
+      <option value="pork">猪肉 (Leg/Shoulder)</option>
+      <option value="beef">牛肉 (Corned Beef)</option>
+      <option value="chicken">鸡腿肉</option>
+      <option value="fish">巴沙鱼肉</option>
+      <option value="lamb">羊腿肉</option>
+    </select>
+  </td>
+  <td><input type="number" class="weight" value="1" min="0.1" step="0.1"></td>
+  <td><button onclick="removeRow(this)">删除</button></td>`;
+  tbody.appendChild(row);
+}
+
+function removeRow(btn) {
+  btn.closest('tr').remove();
+}
+
+function formatDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function generatePlan() {
+  const rows = document.querySelectorAll('#meatTableBody tr');
+  let todaySteps = [];
+  let delayedSteps = [];
+  const delayDays = 2;
+  const today = new Date();
+  const delayedDate = new Date();
+  delayedDate.setDate(today.getDate() + delayDays);
+
+  rows.forEach((row, index) => {
+    const type = row.querySelector('.meatType').value;
+    const weight = Number(row.querySelector('.weight').value);
+
+    switch(type) {
+      case 'pork':
+        todaySteps.push(`${index+1}. 猪肉 ${weight} kg: 切分整块 → 制作方砖 → 70%瘦肉方砖`);
+        todaySteps.push(`   - 制作90%瘦肉方砖 → 冻存并标注瘦肉比例`);
+        break;
+      case 'beef':
+        todaySteps.push(`${index+1}. 牛肉 ${weight} kg: 浸泡清洗去盐`);
+        todaySteps.push(`   - 与牛肥肉混合 → 制作70%方砖`);
+        todaySteps.push(`   - 直接制作90%方砖`);
+        delayedSteps.push(`${index+1}. 牛肉90%方砖 → ${formatDate(delayedDate)} 切2mm薄片 → 上浆腌制`);
+        break;
+      case 'chicken':
+        todaySteps.push(`${index+1}. 鸡腿肉 ${weight} kg: 去骨 → 冻成方砖`);
+        delayedSteps.push(`${index+1}. 鸡肉方砖 → ${formatDate(delayedDate)} 切2mm薄片 → 上浆腌制`);
+        break;
+      case 'fish':
+        delayedSteps.push(`${index+1}. 巴沙鱼 ${weight} kg → ${formatDate(delayedDate)} 切3mm鱼片 → 上浆腌制`);
+        break;
+      case 'lamb':
+        todaySteps.push(`${index+1}. 羊腿肉 ${weight} kg: 去骨 → 冻成方砖`);
+        delayedSteps.push(`${index+1}. 羊肉方砖 → ${formatDate(delayedDate)} 切片或切块`);
+        break;
+    }
+  });
+
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = `<h3>今日必须处理步骤</h3><ul>` +
+    todaySteps.map(s => `<li>${s}</li>`).join('') + '</ul>' +
+    `<h3>延后处理提醒（${delayDays}天后）</h3><ul>` +
+    delayedSteps.map(s => `<li>${s}</li>`).join('') + '</ul>';
+}
+</script>
+
+</body>
+</html>
